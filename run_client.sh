@@ -1,0 +1,1 @@
+./client/gradlew :desktop:run -p ./client

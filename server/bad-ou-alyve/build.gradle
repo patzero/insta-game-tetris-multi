@@ -1,0 +1,24 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+
+ext {
+    APP_GROUP = 'com.github.badoualy';
+    APP_NAME = 'bad-ou-alyve';
+    APP_VERSION = '0.0.1';
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web") 
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+
+    compile 'com.google.code.gson:gson:2.5'
+    compile 'commons-io:commons-io:2.4'
+}
+
+springBoot {
+    mainClass = 'com.github.badoualy.badoualyve.BadOuAlyveApplication'
+}
