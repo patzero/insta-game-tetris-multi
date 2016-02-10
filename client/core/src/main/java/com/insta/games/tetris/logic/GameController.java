@@ -40,7 +40,7 @@ public class GameController {
 
     private void init() {
         prefs = Gdx.app.getPreferences("Tetris");
-        gameState = GameState.Login;
+        gameState = GameState.Running;
         tetromino = new Tetromino(playField, this);
         nextTetromino = new Tetromino(playField, this);
         levelRowsRemoved = 0;
@@ -123,7 +123,7 @@ public class GameController {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.justTouched()) {
             int gx = Gdx.input.getX();
             int gy = Gdx.input.getY();
-            if (gx > game.gameScreen.playScreenX &&
+            /*if (gx > game.gameScreen.playScreenX &&
                     gx < game.gameScreen.playScreenX + game.gameScreen.controlScreenWidth &&
                     gy > game.gameScreen.playScreenY &&
                     gy < game.gameScreen.playScreenY + game.gameScreen.controlScreenWidth) {
@@ -159,7 +159,7 @@ public class GameController {
                 });
 
                 Gdx.input.setInputProcessor(simpleDirectionGestureDetector);
-            }
+            }*/
 
         }
     }
@@ -286,7 +286,7 @@ public class GameController {
      * User input controller
      * overide the methods to using swipe gesture left, right, up, down and tap
      */
-    public static class SimpleDirectionGestureDetector extends GestureDetector {
+    public static class SimpleDirectionGestureDetector extends GestureDetector  {
         public interface DirectionListener {
             void onLeft();
 

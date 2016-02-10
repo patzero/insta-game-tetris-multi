@@ -1,6 +1,7 @@
 package com.insta.games.tetris.ui.screen;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -15,16 +16,19 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Disposable;
+import com.insta.games.tetris.TetrisGame;
 import com.insta.games.tetris.logic.GameController;
 import com.insta.games.tetris.model.Tetromino;
+import com.insta.games.tetris.ui.Assets;
 
 /**
  * Created by Julien on 8/2/16.
  */
-public class GameScreen implements Disposable {
+public class GameScreen implements Screen, Disposable {
 
     private final float gameWidth;
     private final float gameHeight;
+    private TetrisGame game;
     private OrthographicCamera camera;
     private SpriteBatch batch;
     private GameController gameController;
@@ -73,7 +77,7 @@ public class GameScreen implements Disposable {
     public float rotateArrowScreenX;
     public float rotateArrowScreenY;
 
-    public GameScreen(com.insta.games.tetris.ui.screen.PlayField playField, GameController gameController, float gameWidth, float gameHeight) {
+    public GameScreen(PlayField playField, GameController gameController, float gameWidth, float gameHeight) {
         this.playField = playField;
         this.gameController = gameController;
         this.gameWidth = gameWidth;
@@ -81,7 +85,19 @@ public class GameScreen implements Disposable {
         init();
     }
 
+
+    public GameScreen(TetrisGame game, float gameWidth, float gameHeight) {
+        this.game = game;
+        this.gameWidth = gameWidth;
+        this.gameHeight = gameHeight;
+        init();
+    }
+
     private void init() {
+
+        playField = new PlayField();
+        gameController = new GameController(game, playField);
+
         camera = new OrthographicCamera();
         camera.setToOrtho(true, gameWidth, gameHeight);
 
@@ -92,7 +108,7 @@ public class GameScreen implements Disposable {
         batch.setProjectionMatrix(camera.combined);
         shapeRenderer = new ShapeRenderer();
         shapeRenderer.setProjectionMatrix(camera.combined);
-        com.insta.games.tetris.ui.Assets.instance.init(new AssetManager());
+        //Assets.instance.init(new AssetManager());
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("tetris/zorque.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -145,20 +161,19 @@ public class GameScreen implements Disposable {
         shapeRenderer.setProjectionMatrix(camera.combined);
 
         shapeRenderer.setColor(0 / 255f, 0 / 255f, 0 / 255f, 1f);
-        shapeRenderer.rect(FIELD_MARGIN_LEFT, FIELD_MARGIN_TOP, playfieldWidth, playfieldHeight, Color.BLACK, Color.BLACK,Color.BLACK,Color.BLACK);
+        shapeRenderer.rect(FIELD_MARGIN_LEFT, FIELD_MARGIN_TOP, playfieldWidth, playfieldHeight, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK);
         shapeRenderer.end();
 
         batch.begin();
 
-        if (gameController.gameState == GameController.GameState.Login){
-            batch.draw(new Texture(Gdx.files.internal("tetris/images/mainscreen.png")), 0, 0, gameWidth, gameHeight);
-            renderNextTetromino();
-        }
-        else if(gameController.gameState == GameController.GameState.Running){
+        if(gameController.gameState == GameController.GameState.Running){
+            System.out.println("Running");
+
             batch.draw(new Texture(Gdx.files.internal("tetris/images/gamescreen.png")), 0, 0, gameWidth, gameHeight+1);
             renderNextTetromino();
         }
         else if (gameController.gameState == GameController.GameState.GameOver){
+            batch.draw(new Texture(Gdx.files.internal("tetris/images/gamescreen.png")), 0, 0, gameWidth, gameHeight+1);
             gameOverGlyphLayout.setText(gameOverFont, GAME_OVER);
             float textWidth = gameOverGlyphLayout.width;
             float textHeight = gameOverGlyphLayout.height;
@@ -169,6 +184,7 @@ public class GameScreen implements Disposable {
             gameOverFont.setColor(Color.RED);
             gameOverFont.draw(batch, GAME_OVER, textX, textY);
         }
+
         if(gameController.gameState == GameController.GameState.Running || gameController.gameState == GameController.GameState.GameOver){
             renderPlayfield();
             renderScore();
@@ -183,6 +199,8 @@ public class GameScreen implements Disposable {
         if (gameController.windowStage != null) {
             gameController.windowStage.draw();
         }
+
+        gameController.update();
     }
 
     // Rendu du block du score et du level
@@ -256,7 +274,6 @@ public class GameScreen implements Disposable {
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
-
     private void drawBlock(int type, int x, int y) {
         drawBlock(type, x ,y, false);
     }
@@ -302,11 +319,38 @@ public class GameScreen implements Disposable {
         return screenVector.y;
     }
 
+    @Override
+    public void show() {
+
+    }
+
+    @Override
+    public void render(float delta) {
+        renderWorld();
+        camera.update();
+        //gameController.update();
+    }
+
     public void resize(int width, int height) {
         controlScreenWidth = toScreenX(CONTROL_WIDTH);
         controlScreenHeight = toScreenY(CONTROL_WIDTH);
         playScreenX = toScreenX(playX);
         playScreenY = toScreenY(playY);
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void hide() {
+
     }
 
     @Override
