@@ -13,11 +13,11 @@ import com.insta.games.tetris.ui.screen.PlayField;
 
 public class TetrisGame extends Game {
 
-    private GameController gameController;
-    public GameScreen gameScreen;
+    //private GameController gameController;
+    //public GameScreen gameScreen;
 
-    protected final float gameWidth = 355f;
-    private final float gameHeight = 625f;
+    public final float gameWidth = 355f;
+    public final float gameHeight = 625f;
 
     private boolean paused;
     protected int screenWidth;
@@ -25,6 +25,9 @@ public class TetrisGame extends Game {
 
     @Override
     public void create() {
+
+        Assets.instance.init(new AssetManager());
+        this.setScreen(new MainScreen(this, gameWidth, gameHeight));
 
         //screenWidth = Gdx.graphics.getWidth();
         //screenHeight = Gdx.graphics.getHeight();
@@ -35,9 +38,6 @@ public class TetrisGame extends Game {
         gameScreen = new GameScreen(playField, gameController, gameWidth, gameHeight);*/
 
         //paused = false;
-
-        Assets.instance.init(new AssetManager());
-        this.setScreen(new MainScreen(this, gameWidth, gameHeight));
     }
 
     @Override

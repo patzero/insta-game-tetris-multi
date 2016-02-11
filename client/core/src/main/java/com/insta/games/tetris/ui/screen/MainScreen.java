@@ -25,16 +25,11 @@ public class MainScreen implements Screen {
 
     private TetrisGame game;
     private OrthographicCamera camera;
-
-    private SpriteBatch batch = new SpriteBatch();
-    private Vector3 touchPoint = new Vector3();
-
-    private GameController gameController;
+    private SpriteBatch batch;
+    private Vector3 touchPoint;
     public GameScreen gameScreen;
-
     private float gameWidth;
     private float gameHeight;
-
     boolean showTouchePoint;
 
     public MainScreen(TetrisGame game, float gameWidth, float gameHeight) {
@@ -47,7 +42,6 @@ public class MainScreen implements Screen {
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, gameWidth, gameHeight);
-
     }
 
     boolean touched(Rectangle r){
@@ -55,7 +49,6 @@ public class MainScreen implements Screen {
             return false;
 
         camera.unproject(touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0));
-
         return r.contains(touchPoint.x, touchPoint.y);
     }
 
@@ -67,23 +60,14 @@ public class MainScreen implements Screen {
     @Override
     public void render(float delta) {
 
+        // Lunch game screen when user pressed Play button
         if (touched(Assets.mainScreenPlayButton)){
-            System.out.println("mainScreenPlayButton pressed");
-
-            /*PlayField playField = new PlayField();
-            gameController = new GameController(game, playField);*/
-
-            gameScreen = new GameScreen(game, gameWidth, gameHeight);
+            gameScreen = new GameScreen(game);
             game.setScreen(gameScreen);
         }
 
         Gdx.gl.glClearColor(1, 1, 1, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
@@ -92,7 +76,7 @@ public class MainScreen implements Screen {
         batch.draw(Assets.mainScreen, 0, 0, gameWidth, gameHeight);
         batch.end();
 
-        // show touch zone ** FOR DEBUG USAGE **
+        /** show touch zone ** FOR DEBUG USAGE **/
         showTouchePoint = false;
         if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
             //System.out.println("Space key pressed");

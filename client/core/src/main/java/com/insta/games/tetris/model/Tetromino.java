@@ -24,10 +24,10 @@ public class Tetromino {
     public static final String TAG = Tetromino.class.getName();
 
     private boolean[][] gridI = {
-            {true, false, false, false},
-            {true, false, false, false},
-            {true, false, false, false},
-            {true, false, false, false}};
+            {false, true, false, false},
+            {false, true, false, false},
+            {false, true, false, false},
+            {false, true, false, false}};
 
     private boolean[][] gridO = {
             {false, false, false, false},

@@ -12,7 +12,6 @@ import com.insta.games.tetris.model.Tetromino;
  */
 public class PlayField {
 
-    public static final String TAG = PlayField.class.getName();
     public int[][] playfield = new int[22][10]; //used for rendering
     public boolean[][] blocks = new boolean[22][10];  // used for object detection
 

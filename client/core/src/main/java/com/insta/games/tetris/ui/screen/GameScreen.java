@@ -1,21 +1,22 @@
 package com.insta.games.tetris.ui.screen;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Disposable;
 import com.insta.games.tetris.TetrisGame;
 import com.insta.games.tetris.logic.GameController;
 import com.insta.games.tetris.model.Tetromino;
@@ -24,15 +25,15 @@ import com.insta.games.tetris.ui.Assets;
 /**
  * Created by Julien on 8/2/16.
  */
-public class GameScreen implements Screen, Disposable {
+public class GameScreen implements Screen, GestureDetector.GestureListener {
 
-    private final float gameWidth;
-    private final float gameHeight;
+    public final float gameWidth;
+    public final float gameHeight;
     private TetrisGame game;
     private OrthographicCamera camera;
     private SpriteBatch batch;
     private GameController gameController;
-    private com.insta.games.tetris.ui.screen.PlayField playField;
+    private PlayField playField;
     private ShapeRenderer shapeRenderer;
 
     public static final int FIELD_MARGIN_LEFT = 1;
@@ -50,10 +51,10 @@ public class GameScreen implements Screen, Disposable {
     private static final String LEVEL = "Level";
     private FrameBuffer frameBuffer;
     private SpriteBatch fbBatch;
-    private int playfieldWidth;
-    private int playfieldHeight;
-    private int playfieldCenterX;
-    private int playfieldCenterY;
+    public int playfieldWidth;
+    public int playfieldHeight;
+    public int playfieldCenterX;
+    public int playfieldCenterY;
     private int marginRightCenterX;
     private int marginBottomCenterY;
     private BitmapFont scoreFont;
@@ -68,47 +69,31 @@ public class GameScreen implements Screen, Disposable {
     public float controlScreenHeight;
     public float playScreenX;
     public float playScreenY;
-    public float leftArrowScreenX;
-    public float leftArrowScreenY;
-    public float rightArrowScreenX;
-    public float rightArrowScreenY;
-    public float downArrowScreenX;
-    public float downArrowScreenY;
-    public float rotateArrowScreenX;
-    public float rotateArrowScreenY;
 
-    public GameScreen(PlayField playField, GameController gameController, float gameWidth, float gameHeight) {
-        this.playField = playField;
-        this.gameController = gameController;
-        this.gameWidth = gameWidth;
-        this.gameHeight = gameHeight;
-        init();
-    }
+    private Vector3 touchPoint;
+    boolean showTouchePoint;
 
-
-    public GameScreen(TetrisGame game, float gameWidth, float gameHeight) {
+    public GameScreen(TetrisGame game) {
         this.game = game;
-        this.gameWidth = gameWidth;
-        this.gameHeight = gameHeight;
+        this.gameWidth = game.gameWidth;
+        this.gameHeight = game.gameHeight;
         init();
     }
 
     private void init() {
-
-        playField = new PlayField();
-        gameController = new GameController(game, playField);
 
         camera = new OrthographicCamera();
         camera.setToOrtho(true, gameWidth, gameHeight);
 
         worldVector = new Vector3();
         screenVector = new Vector3();
+        touchPoint = new Vector3();
 
         batch = new SpriteBatch();
         batch.setProjectionMatrix(camera.combined);
+
         shapeRenderer = new ShapeRenderer();
         shapeRenderer.setProjectionMatrix(camera.combined);
-        //Assets.instance.init(new AssetManager());
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("tetris/zorque.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -127,6 +112,7 @@ public class GameScreen implements Screen, Disposable {
         levelFont = generator.generateFont(parameter);
 
         frameBuffer = new FrameBuffer(Pixmap.Format.RGBA8888, (int) gameWidth, (int) gameHeight, false);
+
         fbBatch = new SpriteBatch();
 
         playfieldWidth = BLOCK_WIDTH * 10;
@@ -143,19 +129,21 @@ public class GameScreen implements Screen, Disposable {
 
         gameOverGlyphLayout = new GlyphLayout();
         scoreGlyphLayout = new GlyphLayout();
+
+        playField = new PlayField();
+        gameController = new GameController(this, playField);
+
+        GestureDetector gd = new GestureDetector(this);
+        Gdx.input.setInputProcessor(gd);
     }
 
-    public void render() {
-        renderWorld();
-        camera.update();
-    }
+    private synchronized void renderGame() {
 
-    private synchronized void renderWorld() {
+        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         // playfield
         frameBuffer.begin();
-
-        Gdx.gl.glClearColor(0x64 / 255.0f, 0x95 / 255.0f, 0xed / 255.0f, 0xff / 255.0f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setProjectionMatrix(camera.combined);
@@ -164,16 +152,27 @@ public class GameScreen implements Screen, Disposable {
         shapeRenderer.rect(FIELD_MARGIN_LEFT, FIELD_MARGIN_TOP, playfieldWidth, playfieldHeight, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK);
         shapeRenderer.end();
 
+        // Set game screen
         batch.begin();
+        batch.draw(Assets.gameScreen, 0, 0, gameWidth, gameHeight + 1);
 
+        renderPlayfield();
+        renderScore();
+
+        int buttonWidth = 50;
+        int buttonHeight = 50;
+        batch.draw(Assets.pauseButton, gameWidth - buttonWidth, gameHeight - buttonHeight, buttonWidth, buttonHeight);
+        batch.draw(Assets.playButton, gameWidth - buttonWidth, gameHeight - buttonHeight*2, buttonWidth, buttonHeight);
+        batch.draw(Assets.stopButton, gameWidth - buttonWidth, 0, buttonWidth, buttonHeight);
+
+        // Check if game is running or isit pause or is it over
         if(gameController.gameState == GameController.GameState.Running){
-            System.out.println("Running");
-
-            batch.draw(new Texture(Gdx.files.internal("tetris/images/gamescreen.png")), 0, 0, gameWidth, gameHeight+1);
+            gameController.update();
+            renderNextTetromino();
+        } else if (gameController.gameState == GameController.GameState.Pause){
             renderNextTetromino();
         }
         else if (gameController.gameState == GameController.GameState.GameOver){
-            batch.draw(new Texture(Gdx.files.internal("tetris/images/gamescreen.png")), 0, 0, gameWidth, gameHeight+1);
             gameOverGlyphLayout.setText(gameOverFont, GAME_OVER);
             float textWidth = gameOverGlyphLayout.width;
             float textHeight = gameOverGlyphLayout.height;
@@ -185,12 +184,8 @@ public class GameScreen implements Screen, Disposable {
             gameOverFont.draw(batch, GAME_OVER, textX, textY);
         }
 
-        if(gameController.gameState == GameController.GameState.Running || gameController.gameState == GameController.GameState.GameOver){
-            renderPlayfield();
-            renderScore();
-        }
-
         batch.end();
+
         frameBuffer.end();
         fbBatch.begin();
         fbBatch.draw(frameBuffer.getColorBufferTexture(), 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 0, 0, 1, 1);
@@ -199,8 +194,6 @@ public class GameScreen implements Screen, Disposable {
         if (gameController.windowStage != null) {
             gameController.windowStage.draw();
         }
-
-        gameController.update();
     }
 
     // Rendu du block du score et du level
@@ -280,7 +273,8 @@ public class GameScreen implements Screen, Disposable {
 
     private void drawBlock(int type, int x, int y, boolean next) {
         switch (type) {
-            case Tetromino.I: batch.draw(com.insta.games.tetris.ui.Assets.instance.tetromino.elementCyanSquare, x, y, !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 , !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 );
+            case Tetromino.I:
+                batch.draw(com.insta.games.tetris.ui.Assets.instance.tetromino.elementCyanSquare, x, y, !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 , !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 );
                 break;
             case Tetromino.O:
                 batch.draw(com.insta.games.tetris.ui.Assets.instance.tetromino.elementYellowSquare, x, y, !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 , !next ? GameScreen.BLOCK_WIDTH : GameScreen.BLOCK_WIDTH/2 );
@@ -303,6 +297,63 @@ public class GameScreen implements Screen, Disposable {
         }
     }
 
+    boolean touched(Rectangle r){
+        if (!Gdx.input.justTouched())
+            return false;
+
+        camera.unproject(touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0));
+
+        return r.contains(touchPoint.x, touchPoint.y);
+    }
+
+    @Override
+    public void show() {
+
+    }
+
+    @Override
+    public void render(float delta) {
+        renderGame();
+        camera.update();
+
+        Rectangle recPause = new Rectangle(gameWidth - 50, gameHeight - 50, 50, 50);
+        if (touched(recPause)) {
+            if (gameController.gameState == GameController.GameState.Running) {
+                System.out.println("Pause touched");
+                gameController.gamePause();
+            }
+        }
+
+        Rectangle recPlay = new Rectangle(gameWidth - 50, gameHeight - 100, 50, 50);
+        if (touched(recPlay)) {
+            if (gameController.gameState == GameController.GameState.Pause) {
+                System.out.println("Play touched");
+                gameController.gamePlay();
+            }
+        }
+
+        Rectangle recStop = new Rectangle(gameWidth - 50, 0, 50, 50);
+        if (touched(recStop)) {
+            gameController.gamePause();
+            game.setScreen(new MainScreen(game, gameWidth, gameHeight));
+        }
+
+        /** show touch zone ** FOR DEBUG USAGE **/
+        showTouchePoint = false;
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+            showTouchePoint = true;
+        }
+        if (showTouchePoint) {
+            // Play button
+            ShapeRenderer shape = new ShapeRenderer();
+            shape.setProjectionMatrix(camera.combined);
+            shape.begin(ShapeRenderer.ShapeType.Line);
+            shape.rect(FIELD_MARGIN_LEFT, FIELD_MARGIN_TOP, playfieldWidth, playfieldHeight);
+            shape.setColor(Color.BLUE);
+            shape.end();
+        }
+    }
+
     private float toScreenX(int worldX) {
         worldVector.x = worldX;
         worldVector.y = 0;
@@ -320,17 +371,6 @@ public class GameScreen implements Screen, Disposable {
     }
 
     @Override
-    public void show() {
-
-    }
-
-    @Override
-    public void render(float delta) {
-        renderWorld();
-        camera.update();
-        //gameController.update();
-    }
-
     public void resize(int width, int height) {
         controlScreenWidth = toScreenX(CONTROL_WIDTH);
         controlScreenHeight = toScreenY(CONTROL_WIDTH);
@@ -362,5 +402,68 @@ public class GameScreen implements Screen, Disposable {
         if (null != fbBatch)
             fbBatch.dispose();
 
+    }
+
+    /**
+     * Implement touch event
+     */
+
+    @Override
+    public boolean touchDown(float x, float y, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean tap(float x, float y, int count, int button) {
+        gameController.onTap();
+
+        /*Rectangle recPlayField = new Rectangle(FIELD_MARGIN_LEFT, FIELD_MARGIN_TOP, playfieldWidth, playfieldHeight);
+        if (touched(recPlayField)) {
+            gameController.onTap();
+        }*/
+        return true;
+    }
+
+    @Override
+    public boolean longPress(float x, float y) {
+        return false;
+    }
+
+    @Override
+    public boolean fling(float velocityX, float velocityY, int button) {
+        if(Math.abs(velocityX)>Math.abs(velocityY)){
+            if(velocityX>0){
+                gameController.onRight();
+            }else{
+                gameController.onLeft();
+            }
+        }else{
+            if(velocityY>0){
+                gameController.onDown();
+            }else{
+                //up
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean pan(float x, float y, float deltaX, float deltaY) {
+        return false;
+    }
+
+    @Override
+    public boolean panStop(float x, float y, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean zoom(float initialDistance, float distance) {
+        return false;
+    }
+
+    @Override
+    public boolean pinch(Vector2 initialPointer1, Vector2 initialPointer2, Vector2 pointer1, Vector2 pointer2) {
+        return false;
     }
 }

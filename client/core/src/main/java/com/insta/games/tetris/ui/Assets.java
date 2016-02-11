@@ -12,22 +12,22 @@ import com.badlogic.gdx.utils.Disposable;
 
 public class Assets implements Disposable, AssetErrorListener {
 
-    public static final String TAG = Assets.class.getName();
     public static final Assets instance = new Assets();
     private AssetManager assetManager;
     public AssetTetromino tetromino;
-    public AssetControls controls;
     public AssetSounds sounds;
 
     // Screen
-    //public static TextureRegion mainScreen;
     public static Texture mainScreen;
+    public static Texture gameScreen;
+    public static Texture pauseButton;
+    public static Texture playButton;
+    public static Texture stopButton;
 
     // Touch point
     public static Rectangle mainScreenPlayButton;
-
-
-    private Assets() {
+    
+    public Assets() {
     }
 
     public void init(AssetManager assetManager) {
@@ -38,6 +38,11 @@ public class Assets implements Disposable, AssetErrorListener {
         mainScreen = new Texture(Gdx.files.internal("tetris/images/main_screen.png"));
         mainScreenPlayButton = new Rectangle(87, 12, 187, 61);
 
+        gameScreen = new Texture(Gdx.files.internal("tetris/images/game_screen.png"));
+
+        pauseButton = new Texture(Gdx.files.internal("tetris/images/pause.png"));
+        playButton = new Texture(Gdx.files.internal("tetris/images/play.png"));
+        stopButton = new Texture(Gdx.files.internal("tetris/images/stop.png"));
 
         assetManager.load("tetris/sounds/level_up.wav", Sound.class);
         assetManager.load("tetris/sounds/row_cleared.wav", Sound.class);
@@ -46,14 +51,8 @@ public class Assets implements Disposable, AssetErrorListener {
         // start loading assets and wait until finished
         assetManager.finishLoading();
 
-        Gdx.app.debug(TAG, "# of assets loaded: " + assetManager.getAssetNames().size);
-        for (String a : assetManager.getAssetNames()) {
-            Gdx.app.debug(TAG, "asset: " + a);
-        }
-
         // create game resource objects
         tetromino = new AssetTetromino();
-        controls = new AssetControls();
         sounds = new AssetSounds();
     }
 
@@ -79,14 +78,6 @@ public class Assets implements Disposable, AssetErrorListener {
         }
     }
 
-    public class AssetControls {
-        public final Texture play;
-
-        public AssetControls() {
-            play = new Texture(Gdx.files.internal("tetris/images/play.png"));
-        }
-    }
-
     public class AssetSounds {
 
         public final Sound levelUp;
@@ -102,14 +93,12 @@ public class Assets implements Disposable, AssetErrorListener {
 
     @Override
     public void error(AssetDescriptor asset, Throwable throwable) {
-        Gdx.app.error(TAG, "Couldn't load asset '" + asset.toString() + "'", throwable);
-
+        Gdx.app.error("TETRIS", "Couldn't load asset '" + asset.toString() + "'", throwable);
     }
 
     @Override
     public void dispose() {
         assetManager.dispose();
-
     }
 
 }

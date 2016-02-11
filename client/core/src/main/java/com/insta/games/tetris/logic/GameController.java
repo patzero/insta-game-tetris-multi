@@ -1,11 +1,15 @@
 package com.insta.games.tetris.logic;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
 import java.util.Random;
@@ -13,6 +17,7 @@ import java.util.Random;
 import com.insta.games.tetris.ui.Assets;
 import com.insta.games.tetris.model.Tetromino;
 import com.insta.games.tetris.TetrisGame;
+import com.insta.games.tetris.ui.screen.GameScreen;
 import com.insta.games.tetris.ui.screen.PlayField;
 
 /**
@@ -20,7 +25,7 @@ import com.insta.games.tetris.ui.screen.PlayField;
  */
 public class GameController {
 
-    private final TetrisGame game;
+    private GameScreen gameScreen;
     private PlayField playField;
     public boolean tetrominoSpawned = false;
     private Tetromino tetromino;
@@ -31,8 +36,11 @@ public class GameController {
     private Preferences prefs;
     private static Random rand;
 
-    public GameController(TetrisGame game, PlayField playField) {
-        this.game = game;
+    private boolean moved;
+
+
+    public GameController(GameScreen gameScreen, PlayField playField) {
+        this.gameScreen = gameScreen;
         this.playField = playField;
         this.rand = new Random();
         init();
@@ -45,18 +53,20 @@ public class GameController {
         nextTetromino = new Tetromino(playField, this);
         levelRowsRemoved = 0;
         windowStage = new Stage();
-    }
 
+    }
 
     public void update() {
         switch (gameState) {
-            case Login:
-                checkMenuControls();
+            case Pause:
+                tetromino.fall(false);
                 break;
             case Running:
                 checkRows();
-                boolean moved = false;
-                if (!tetrominoSpawned) spawnTetromino();
+                moved = false;
+                if (!tetrominoSpawned)
+                    spawnTetromino();
+
                 if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
                     tetromino.rotate();
                     moved = true;
@@ -70,100 +80,74 @@ public class GameController {
                     moved = true;
                 }
                 if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-                    //tetromino.move(0, 1);
                     tetromino.fall(true);
                     moved = true;
                 }
-                if (Gdx.input.justTouched() && game.gameScreen != null) {
-                    int gx = Gdx.input.getX();
-                    int gy = Gdx.input.getY();
-                    if (gx > game.gameScreen.leftArrowScreenX &&
-                            gx < game.gameScreen.leftArrowScreenX + game.gameScreen.controlScreenWidth &&
-                            gy > game.gameScreen.leftArrowScreenY &&
-                            gy < game.gameScreen.leftArrowScreenY +  game.gameScreen.controlScreenWidth) {
-                        tetromino.move(-1, 0);
-                        moved = true;
-                    } else if (gx > game.gameScreen.rightArrowScreenX &&
-                            gx < game.gameScreen.rightArrowScreenX +  game.gameScreen.controlScreenWidth &&
-                            gy > game.gameScreen.rightArrowScreenY &&
-                            gy < game.gameScreen.rightArrowScreenY +  game.gameScreen.controlScreenWidth) {
-                        tetromino.move(1, 0);
-                        moved = true;
-                    } else if (gx > game.gameScreen.rotateArrowScreenX &&
-                            gx < game.gameScreen.rotateArrowScreenY +  game.gameScreen.controlScreenWidth &&
-                            gy > game.gameScreen.rotateArrowScreenY &&
-                            gy < game.gameScreen.rotateArrowScreenY +  game.gameScreen.controlScreenWidth) {
-                        tetromino.rotate();
-                        moved = true;
-                    }
+
+                /*if (Gdx.input.justTouched() || Gdx.input.isTouched()) {
+                    tetromino.rotate();
+                    moved = true;
                 }
-                if ((Gdx.input.justTouched() || Gdx.input.isTouched()) && game.gameScreen != null) {
-                    int gx = Gdx.input.getX();
-                    int gy = Gdx.input.getY();
-                    if (gx > game.gameScreen.downArrowScreenX &&
-                            gx < game.gameScreen.downArrowScreenX +  game.gameScreen.controlScreenWidth &&
-                            gy > game.gameScreen.downArrowScreenY &&
-                            gy < game.gameScreen.downArrowScreenY + game.gameScreen.controlScreenWidth) {
-                        tetromino.fall(true);
-                        moved = true;
-                    }
-                }
+
+                if (Gdx.input.justTouched() ||  Gdx.input.isTouched()) {
+                    tetromino.fall(true);
+                    moved = true;
+                }*/
+
                 if (!moved)
                     tetromino.fall(false);
                 playField.update(tetromino);
                 break;
             case GameOver:
-                checkMenuControls();
                 break;
         }
         windowStage.act();
     }
 
-    private void checkMenuControls() {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.justTouched()) {
+    public void gamePause() {
+        gameState = GameState.Pause;
+    }
+
+    public void gamePlay() {
+        gameState = GameState.Running;
+    }
+
+    public void onTap() {
+        if (tetromino != null && tetromino.grid != null) {
+
             int gx = Gdx.input.getX();
             int gy = Gdx.input.getY();
-            /*if (gx > game.gameScreen.playScreenX &&
-                    gx < game.gameScreen.playScreenX + game.gameScreen.controlScreenWidth &&
-                    gy > game.gameScreen.playScreenY &&
-                    gy < game.gameScreen.playScreenY + game.gameScreen.controlScreenWidth) {
-                playField.reset();
-                gameState = GameState.Running;
+            System.out.println(gx + ":" + gy);
 
-                // Using swipe gesture to move the tetris block
-                SimpleDirectionGestureDetector simpleDirectionGestureDetector = new SimpleDirectionGestureDetector(new SimpleDirectionGestureDetector.DirectionListener() {
-                    @Override
-                    public void onLeft() {
-                        tetromino.move(-1, 0);
-                    }
-
-                    @Override
-                    public void onRight() {
-                        tetromino.move(1, 0);
-                    }
-
-                    @Override
-                    public void onUp() {
-
-                    }
-
-                    @Override
-                    public void onDown() {
-                        tetromino.fall(true);
-                    }
-
-                    @Override
-                    public void onTap() {
-                        tetromino.rotate();
-                    }
-                });
-
-                Gdx.input.setInputProcessor(simpleDirectionGestureDetector);
+            // check if the tap is inside the play field
+            /*if (gx > gameScreen.playfieldWidth) {
+                System.out.println("tap inside playfield");
             }*/
-
+            tetromino.rotate();
+            moved = true;
         }
     }
 
+    public void onLeft() {
+        if (tetromino != null && tetromino.grid != null) {
+            tetromino.move(-1, 0);
+            moved = true;
+        }
+    }
+
+    public void onRight() {
+        if (tetromino != null && tetromino.grid != null) {
+            tetromino.move(1, 0);
+            moved = true;
+        }
+    }
+
+    public void onDown() {
+        if (tetromino != null && tetromino.grid != null) {
+            tetromino.fall(true);
+            moved = true;
+        }
+    }
     private void checkRows() {
         int rowsRemoved = 0;
         if (null == tetromino || System.currentTimeMillis() - tetromino.lastFallTime >= tetromino.delay) {
@@ -270,102 +254,7 @@ public class GameController {
         return rand.nextInt((max - min) + 1) + min;
     }
 
-    public void dispose() {
-        playField.dispose();
-        if (windowStage != null) {
-            windowStage.dispose();
-        }
-    }
-
     public enum GameState {
-        Login, Running, GameOver //,Intro, Options
+        Login, Running, GameOver, Pause //,Intro, Options
     }
-
-
-    /**
-     * User input controller
-     * overide the methods to using swipe gesture left, right, up, down and tap
-     */
-    public static class SimpleDirectionGestureDetector extends GestureDetector  {
-        public interface DirectionListener {
-            void onLeft();
-
-            void onRight();
-
-            void onUp();
-
-            void onDown();
-
-            void onTap();
-        }
-
-        public SimpleDirectionGestureDetector(DirectionListener directionListener) {
-            super(new DirectionGestureListener(directionListener));
-        }
-
-        private static class DirectionGestureListener implements GestureListener{
-            DirectionListener directionListener;
-
-            public DirectionGestureListener(DirectionListener directionListener){
-                this.directionListener = directionListener;
-            }
-
-            @Override
-            public boolean touchDown(float x, float y, int pointer, int button) {
-                return false;
-            }
-
-            @Override
-            public boolean tap(float x, float y, int count, int button) {
-                directionListener.onTap();
-                return true;
-            }
-
-            @Override
-            public boolean longPress(float x, float y) {
-                return false;
-            }
-
-            @Override
-            public boolean fling(float velocityX, float velocityY, int button) {
-                if(Math.abs(velocityX)>Math.abs(velocityY)){
-                    if(velocityX>0){
-                        directionListener.onRight();
-                    }else{
-                        directionListener.onLeft();
-                    }
-                }else{
-                    if(velocityY>0){
-                        directionListener.onDown();
-                    }else{
-                        directionListener.onUp();
-                    }
-                }
-                return true;
-            }
-
-            @Override
-            public boolean pan(float x, float y, float deltaX, float deltaY) {
-                return false;
-            }
-
-            @Override
-            public boolean panStop(float x, float y, int pointer, int button) {
-                return false;
-            }
-
-            @Override
-            public boolean zoom(float initialDistance, float distance) {
-                return false;
-            }
-
-            @Override
-            public boolean pinch(Vector2 initialPointer1, Vector2 initialPointer2, Vector2 pointer1, Vector2 pointer2) {
-                return false;
-            }
-
-        }
-
-    }
-
 }
