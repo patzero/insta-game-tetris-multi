@@ -110,14 +110,12 @@ public class GameController {
 
             int gx = Gdx.input.getX();
             int gy = Gdx.input.getY();
-            System.out.println(gx + ":" + gy);
 
             // check if the tap is inside the play field
-            /*if (gx > gameScreen.playfieldWidth) {
-                System.out.println("tap inside playfield");
-            }*/
-            tetromino.rotate();
-            moved = true;
+            if (gx < gameScreen.playfieldWidth && gy > gameScreen.FIELD_MARGIN_TOP) {
+                tetromino.rotate();
+                moved = true;
+            }
         }
     }
 

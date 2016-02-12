@@ -161,8 +161,10 @@ public class GameScreen implements Screen, GestureDetector.GestureListener {
 
         int buttonWidth = 50;
         int buttonHeight = 50;
-        batch.draw(Assets.pauseButton, gameWidth - buttonWidth, gameHeight - buttonHeight, buttonWidth, buttonHeight);
-        batch.draw(Assets.playButton, gameWidth - buttonWidth, gameHeight - buttonHeight*2, buttonWidth, buttonHeight);
+        if (gameController.gameState == GameController.GameState.Running)
+            batch.draw(Assets.pauseButton, gameWidth - buttonWidth, gameHeight - buttonHeight, buttonWidth, buttonHeight);
+        else if (gameController.gameState == GameController.GameState.Pause)
+        batch.draw(Assets.playButton, gameWidth - buttonWidth, gameHeight - buttonHeight, buttonWidth, buttonHeight);
         batch.draw(Assets.stopButton, gameWidth - buttonWidth, 0, buttonWidth, buttonHeight);
 
         // Check if game is running or isit pause or is it over
@@ -316,19 +318,20 @@ public class GameScreen implements Screen, GestureDetector.GestureListener {
         renderGame();
         camera.update();
 
-        Rectangle recPause = new Rectangle(gameWidth - 50, gameHeight - 50, 50, 50);
-        if (touched(recPause)) {
-            if (gameController.gameState == GameController.GameState.Running) {
-                System.out.println("Pause touched");
-                gameController.gamePause();
+        if (gameController.gameState == GameController.GameState.Pause){
+            Rectangle recPlay = new Rectangle(gameWidth - 50, gameHeight - 50, 50, 50);
+            if (touched(recPlay)) {
+                //System.out.println("Play touched");
+                gameController.gamePlay();
+                return;
             }
         }
-
-        Rectangle recPlay = new Rectangle(gameWidth - 50, gameHeight - 100, 50, 50);
-        if (touched(recPlay)) {
-            if (gameController.gameState == GameController.GameState.Pause) {
-                System.out.println("Play touched");
-                gameController.gamePlay();
+        else if (gameController.gameState == GameController.GameState.Running){
+            Rectangle recPause = new Rectangle(gameWidth - 50, gameHeight - 50, 50, 50);
+            if (touched(recPause)) {
+                //System.out.println("Pause touched");
+                gameController.gamePause();
+                return;
             }
         }
 
