@@ -1,22 +1,15 @@
 package com.insta.games.tetris.logic;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.input.GestureDetector;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 
 import java.util.Random;
 
 import com.insta.games.tetris.ui.Assets;
 import com.insta.games.tetris.model.Tetromino;
-import com.insta.games.tetris.TetrisGame;
 import com.insta.games.tetris.ui.screen.GameScreen;
 import com.insta.games.tetris.ui.screen.PlayField;
 
